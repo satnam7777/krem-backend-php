@@ -1,0 +1,33 @@
+services:
+  traefik:
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      # Redirect HTTP -> HTTPS
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --log.level=INFO
+    ports:
+      - "8080:80"
+      - "8443:443"
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/traefik/certs:/certs:ro
+
+  nginx:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.krema.rule=HostRegexp(`{tenant:[a-z0-9-]+}.127.0.0.1.sslip.io`) || Host(`127.0.0.1.sslip.io`)
+      - traefik.http.routers.krema.entrypoints=websecure
+      - traefik.http.routers.krema.tls=true
+      - traefik.http.routers.krema.tls.certresolver=default
+      - traefik.http.services.krema.loadbalancer.server.port=80
+      # Use static cert files (mkcert)
+      - traefik.http.routers.krema.tls.domains[0].main=127.0.0.1.sslip.io
+      - traefik.http.routers.krema.tls.domains[0].sans=*.127.0.0.1.sslip.io

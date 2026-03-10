@@ -1,0 +1,26 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: krema_traefik
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --log.level=INFO
+    ports:
+      - "8080:80"
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - nginx
+
+  nginx:
+    labels:
+      - traefik.enable=true
+      # Wildcard tenant routing using sslip.io (no hosts edits):
+      # Example tenant host: demo.127.0.0.1.sslip.io
+      - traefik.http.routers.krema.rule=HostRegexp(`{tenant:[a-z0-9-]+}.127.0.0.1.sslip.io`) || Host(`127.0.0.1.sslip.io`)
+      - traefik.http.routers.krema.entrypoints=web
+      - traefik.http.services.krema.loadbalancer.server.port=80

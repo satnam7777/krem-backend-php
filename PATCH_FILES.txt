@@ -1,0 +1,4 @@
+This patch replaces:
+- app/Services/Analytics/AnalyticsService.php
+
+Everything else remains identical to module6_analytics_COMPLETE.

@@ -1,0 +1,97 @@
+services:
+  app:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      args:
+        UID: 1000
+        GID: 1000
+    container_name: krema_app
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: "1"
+
+  nginx:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: krema_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - app
+
+  postgres:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    image: postgres:16-alpine
+    container_name: krema_postgres
+    environment:
+      POSTGRES_DB: krema_central
+      POSTGRES_USER: krema
+      POSTGRES_PASSWORD: krema_pass
+    ports:
+      - "54321:5432"
+    volumes:
+      - krema_pgdata:/var/lib/postgresql/data
+
+  redis:
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    image: redis:7-alpine
+    container_name: krema_redis
+    ports:
+      - "63791:6379"
+
+  worker:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      args:
+        UID: 1000
+        GID: 1000
+    container_name: krema_worker
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - app
+      - redis
+      - postgres
+    command: ["bash","-lc","php artisan queue:work --sleep=1 --tries=3 --timeout=90"]
+
+  scheduler:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      args:
+        UID: 1000
+        GID: 1000
+    container_name: krema_scheduler
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - app
+      - postgres
+      - redis
+    command: ["bash","-lc","php artisan schedule:work"]
+
+volumes:
+  krema_pgdata:
