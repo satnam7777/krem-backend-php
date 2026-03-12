@@ -213,13 +213,4 @@ return [
     */
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
-
-    'driver' => env('SESSION_DRIVER', 'cookie'),
-
-'domain' => env('SESSION_DOMAIN', null),
-
-'secure' => env('SESSION_SECURE_COOKIE', false),
-
-'same_site' => 'lax',
-
 ];
