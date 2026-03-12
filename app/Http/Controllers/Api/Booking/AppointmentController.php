@@ -9,6 +9,7 @@ use App\Http\Requests\Booking\AppointmentStatusRequest;
 use App\Models\Appointment;
 use App\Services\Booking\AppointmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AppointmentController extends Controller
 {
@@ -25,6 +26,7 @@ class AppointmentController extends Controller
 
         return response()->json(['data'=>$q->orderByDesc('start_at')->paginate(50)]);
     }
+
 
     public function store(AppointmentCreateRequest $request, AppointmentService $svc)
     {
